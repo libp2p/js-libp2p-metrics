@@ -5,6 +5,7 @@ import { DefaultStats, StatsInit } from './stats.js'
 import type { Metrics, Stats, TrackStreamOptions } from '@libp2p/interface-metrics'
 import type { PeerId } from '@libp2p/interface-peer-id'
 import type { Startable } from '@libp2p/interfaces/startable'
+import type { ConnectionManager } from '@libp2p/interface-connection-manager'
 
 export const DEFAULT_INIT = {
   computeThrottleMaxQueueSize: 1000,
@@ -41,6 +42,10 @@ export interface DefaultMetricsInit {
   maxOldPeersRetention: number
 }
 
+export interface DefaultMetricsComponents {
+  connectionManager: ConnectionManager
+}
+
 export class DefaultMetrics implements Metrics, Startable {
   public globalStats: DefaultStats
 
@@ -49,8 +54,9 @@ export class DefaultMetrics implements Metrics, Startable {
   private readonly oldPeers: ReturnType<typeof LRU>
   private running: boolean
   private readonly statsInit: StatsInit
+  private readonly components: DefaultMetricsComponents
 
-  constructor (init?: Partial<DefaultMetricsInit>) {
+  constructor (components: DefaultMetricsComponents, init?: Partial<DefaultMetricsInit>) {
     this.statsInit = {
       ...DEFAULT_INIT,
       ...(init ?? {}),
@@ -62,6 +68,7 @@ export class DefaultMetrics implements Metrics, Startable {
     this.oldPeers = LRU(init?.maxOldPeersRetention ?? DEFAULT_INIT.maxOldPeersRetention)
     this.running = false
     this._onMessage = this._onMessage.bind(this)
+    this.components = components
   }
 
   isStarted () {
@@ -74,6 +81,10 @@ export class DefaultMetrics implements Metrics, Startable {
    */
   async start () {
     this.running = true
+
+    this.components.connectionManager.addEventListener('peer:disconnect', (evt) => {
+      this.onPeerDisconnected(evt.detail.remotePeer)
+    })
   }
 
   /**

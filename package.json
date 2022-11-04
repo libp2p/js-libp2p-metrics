@@ -136,6 +136,7 @@
     "release": "aegir release"
   },
   "dependencies": {
+    "@libp2p/interface-connection-manager": "^1.3.0",
     "@libp2p/interface-metrics": "^3.0.0",
     "@libp2p/interface-peer-id": "^1.0.5",
     "@libp2p/interfaces": "^3.0.3",
@@ -145,6 +146,8 @@
     "retimer": "^3.0.0"
   },
   "devDependencies": {
+    "@libp2p/interface-mocks": "^7.0.3",
+    "@libp2p/peer-id-factory": "^1.0.19",
     "aegir": "^37.5.6"
   }
 }

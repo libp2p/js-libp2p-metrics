@@ -1,6 +1,8 @@
 import type { MetricOptions, Metric, MetricGroup, CalculatedMetricOptions, StopTimer } from '@libp2p/interface-metrics'
 import { expect } from 'aegir/chai'
 import { DefaultMetrics } from '../src/index.js'
+import { mockConnectionManager, mockRegistrar } from '@libp2p/interface-mocks'
+import { createEd25519PeerId } from '@libp2p/peer-id-factory'
 
 class DefaultMetric implements Metric {
   public value: number = 0
@@ -113,11 +115,18 @@ class TestMetrics extends DefaultMetrics {
 }
 
 describe('default metrics', () => {
-  it('should collect metrics', () => {
+  it('should collect metrics', async () => {
     const metricName = 'test_my_metric'
     const metricValue = 5
+    const network: any = {
+      peerId: await createEd25519PeerId(),
+      registrar: mockRegistrar()
+    }
+    const connectionManager = mockConnectionManager(network)
 
-    const metrics = new TestMetrics()
+    const metrics = new TestMetrics({
+      connectionManager
+    })
     const metric = metrics.registerMetric(metricName)
     metric.update(metricValue)
 
