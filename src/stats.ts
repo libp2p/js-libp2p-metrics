@@ -1,15 +1,46 @@
 import { CustomEvent, EventEmitter } from '@libp2p/interfaces/events'
-import { createMovingAverage } from './moving-average.js'
+import { createMovingAverage, MovingAverage } from './moving-average.js'
 // @ts-expect-error no types
 import retimer from 'retimer'
-import type { MovingAverages, Stats, TransferStats } from '@libp2p/interface-metrics'
+
+export interface Stats {
+  /**
+   * Returns a clone of the current stats.
+   */
+  getSnapshot: () => TransferStats
+
+  /**
+   * Returns a clone of the internal movingAverages
+   */
+  getMovingAverages: () => MovingAverages
+
+  /**
+   * Pushes the given operation data to the queue, along with the
+   * current Timestamp, then resets the update timer.
+   */
+  push: (counter: string, inc: number) => void
+
+  /**
+   * Stop processing stats
+   */
+  stop: () => void
+}
+
+export interface MovingAverages {
+  dataReceived: MovingAverage[]
+  dataSent: MovingAverage[]
+}
+
+export interface TransferStats {
+  dataReceived: bigint
+  dataSent: bigint
+}
 
 export interface StatsEvents {
   'update': CustomEvent<TransferStats>
 }
 
 export interface StatsInit {
-  enabled: boolean
   initialCounters: ['dataReceived', 'dataSent']
   movingAverageIntervals: number[]
   computeThrottleMaxQueueSize: number
@@ -17,7 +48,6 @@ export interface StatsInit {
 }
 
 export class DefaultStats extends EventEmitter<StatsEvents> implements Stats {
-  private readonly enabled: boolean
   public queue: Array<[string, number, number]>
   private stats: TransferStats
   private frequencyLastTime: number
@@ -34,7 +64,6 @@ export class DefaultStats extends EventEmitter<StatsEvents> implements Stats {
   constructor (init: StatsInit) {
     super()
 
-    this.enabled = init.enabled
     this.queue = []
     this.stats = {
       dataReceived: 0n,
@@ -72,10 +101,6 @@ export class DefaultStats extends EventEmitter<StatsEvents> implements Stats {
    * `Stats.push` will also start the processing
    */
   start () {
-    if (!this.enabled) {
-      return
-    }
-
     if (this.queue.length > 0) {
       this._resetComputeTimeout()
     }
@@ -235,4 +260,8 @@ export class DefaultStats extends EventEmitter<StatsEvents> implements Stats {
 
     this.frequencyAccumulators[key] += inc
   }
+}
+
+export function createStats (init: StatsInit): Stats {
+  return new DefaultStats(init)
 }

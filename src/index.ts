@@ -6,7 +6,7 @@ import type { Metrics, Stats, TrackStreamOptions } from '@libp2p/interface-metri
 import type { PeerId } from '@libp2p/interface-peer-id'
 import type { Startable } from '@libp2p/interfaces/startable'
 
-export const METRICS = {
+export const DEFAULT_INIT = {
   computeThrottleMaxQueueSize: 1000,
   computeThrottleTimeout: 2000,
   movingAverageIntervals: [
@@ -50,15 +50,16 @@ export class DefaultMetrics implements Metrics, Startable {
   private running: boolean
   private readonly statsInit: StatsInit
 
-  constructor (init: DefaultMetricsInit) {
+  constructor (init?: Partial<DefaultMetricsInit>) {
     this.statsInit = {
-      ...init,
+      ...DEFAULT_INIT,
+      ...(init ?? {}),
       initialCounters
     }
     this.globalStats = new DefaultStats(this.statsInit)
     this.peerStats = new Map()
     this.protocolStats = new Map()
-    this.oldPeers = LRU(init.maxOldPeersRetention ?? defaultOptions.maxOldPeersRetention)
+    this.oldPeers = LRU(init?.maxOldPeersRetention ?? DEFAULT_INIT.maxOldPeersRetention)
     this.running = false
     this._onMessage = this._onMessage.bind(this)
   }
@@ -259,6 +260,14 @@ export class DefaultMetrics implements Metrics, Startable {
         sink
       )
     }
+  }
+
+  registerMetric (name: string, opts: any): any {
+    throw new Error('Not implemented')
+  }
+
+  registerMetricGroup (name: string, opts: any): any {
+    throw new Error('Not implemented')
   }
 }
 
